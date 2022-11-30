@@ -2,10 +2,13 @@
 
 // Include the library:
 #include <SharpIR.h>
+#include <Servo.h>
 
 // Define model and input pin:
-#define IRPin_Sentinel_Left A2
+#define IRPin_Sentinel_Left A0
 #define IRPin_Evaluator A1
+#define SERVO_PIN 8
+#define LED_PIN 7
 
 #define model 100500
 
@@ -13,13 +16,14 @@
   If an IR reading is less than this threshold, we count this as
   a detected object.
 */
-const int SERVO_TURN_SPEED = 10;
-const int DETECTION_THRESHOLD = 10;
+const int SERVO_TURN_SPEED = 5;
+const int DETECTION_THRESHOLD = 60;
 const int MIDDLE_SERVO_ANGLE = 90;
 const int IR_ANGLE_OFFSET = 60;
 const int EVALUATOR_START_ANGLE = MIDDLE_SERVO_ANGLE - IR_ANGLE_OFFSET;
 const int EVALUATOR_END_ANGLE = MIDDLE_SERVO_ANGLE + IR_ANGLE_OFFSET;
 const int MAX_OSCILLATIONS = 4;
+const int PADDING = 25;
 
 const int DORMANT_STATE = 0;
 const int AWAKE_STATE = 1;
@@ -63,6 +67,7 @@ char buffer[256];
 // Create a new instance of the SharpIR class:
 SharpIR leftSentinel = SharpIR(IRPin_Sentinel_Left, model);
 SharpIR evaluatorNode = SharpIR(IRPin_Evaluator, model);
+Servo servo;
 
 int get_evaluator_reading() {
   return evaluatorNode.distance();
@@ -71,24 +76,29 @@ int get_evaluator_reading() {
 void set_servo_angle(int angle) {
   servo_angle = angle;
   // TODO: HARDWARE STUFF
+  servo.write(servo_angle);
 }
 
 void enter_dormant_state() {
+  Serial.println("DORMANT");
   system_state = DORMANT_STATE;
   set_servo_angle(EVALUATOR_START_ANGLE);
   turn_direction = DEFAULT_TURN_DIRECTION;
   is_alarm_on = false;
   oscillations = 0;
   previous_reading = INFINITY;
+  turn_LED_off();
 }
 
 void enter_awake_state() {
+  Serial.println("awake state activated");
   system_state = AWAKE_STATE;
   is_alarm_on = false;
+  turn_LED_on();
 }
 
 void do_turn_servo() {
-  servo_angle = servo_angle + SERVO_TURN_SPEED;
+  servo_angle = servo_angle + (SERVO_TURN_SPEED*turn_direction);
   set_servo_angle(servo_angle);
 }
 
@@ -98,6 +108,14 @@ void enable_servo() {
 
 void disable_servo() {
   return;
+}
+
+void turn_LED_on() {
+  digitalWrite(LED_PIN, HIGH);
+}
+
+void turn_LED_off() {
+  digitalWrite(LED_PIN, LOW);
 }
 
 void switch_servo_turn_direction() {
@@ -112,6 +130,8 @@ bool is_detecting_obstructor(SharpIR* sensor_ir) {
 void setup() {
   // Begin serial communication at a baud rate of 9600:
   Serial.begin(9600);
+  servo.attach(SERVO_PIN);
+  pinMode(LED_PIN, OUTPUT);
   enter_dormant_state();
 }
 
@@ -121,49 +141,58 @@ void loop() {
   evaluatorDistance = evaluatorNode.distance();
   
   // Print the measured distance to the serial monitor:
-  sprintf(buffer, "Mean distances: (%d,%d,%d)", leftDistance, evaluatorDistance);
+  sprintf(buffer, "Mean distances: (%d,%d) o: %d s: %d, a: %d", leftDistance, evaluatorDistance, oscillations, system_state, servo_angle);
   Serial.println(buffer);
 
-  switch(system_state) {
-    case (DORMANT_STATE):
-      if (is_detecting_obstructor(&leftSentinel) || is_detecting_obstructor(&evaluatorNode)) {
-        enter_awake_state();
-      }
-    case (AWAKE_STATE):
-      if (!is_evaluator_locked) {
-        do_turn_servo();
-      }
-      if (servo_angle <= EVALUATOR_START_ANGLE || servo_angle >= EVALUATOR_END_ANGLE) {
-        oscillations += 1;
-        if (servo_angle <= EVALUATOR_START_ANGLE) {
-          turn_direction = CCW;
-        } else {
-          turn_direction = CW;
-        }
-      }
-      if (get_evaluator_reading() > previous_reading) {
-        if (!is_evaluator_locked) {
-          switch_servo_turn_direction();
-          do_turn_servo();
-          is_evaluator_locked = true;
-        } else {
-          is_evaluator_locked = false;
-        }
-      }
-
-      if (is_evaluator_locked && !is_detecting_obstructor(&evaluatorNode)) {
-        is_evaluator_locked = false;
-      }
-
-      if (is_detecting_obstructor(&evaluatorNode)) {
-        oscillations = 0;
-      }
-
-      previous_reading = get_evaluator_reading();
-      if (oscillations == MAX_OSCILLATIONS) {
-        enter_dormant_state();
-      }
+  if (system_state == DORMANT_STATE){
+    if (is_detecting_obstructor(&leftSentinel) || is_detecting_obstructor(&evaluatorNode)) {
+      enter_awake_state();
+    }
+  }
+  if (system_state == AWAKE_STATE){
+    do_awake_state();
   }
 
-  delay(1000);
+  delay(20);
+}
+
+void do_awake_state() {
+  if (!is_evaluator_locked) {
+    do_turn_servo();
+  }
+  if (servo_angle <= EVALUATOR_START_ANGLE || servo_angle >= EVALUATOR_END_ANGLE) {
+    oscillations += 1;
+    if (servo_angle <= EVALUATOR_START_ANGLE) {
+      turn_direction = CCW;
+    } else {
+      turn_direction = CW;
+    }
+    do_turn_servo();
+  }
+  if (get_evaluator_reading() > previous_reading - PADDING) {
+    if (!is_evaluator_locked) {
+      switch_servo_turn_direction();
+      do_turn_servo();
+      is_evaluator_locked = true;
+    } else {
+      is_evaluator_locked = false;
+    }
+  }
+
+  if (is_evaluator_locked && !is_detecting_obstructor(&evaluatorNode)) {
+    is_evaluator_locked = false;
+  }
+
+  if (is_detecting_obstructor(&evaluatorNode)) {
+    oscillations = 0;
+  }
+
+  previous_reading = get_evaluator_reading();
+  if (oscillations == MAX_OSCILLATIONS) {
+    enter_dormant_state();
+  }
+}
+
+void minimizeDist() {
+  
 }
