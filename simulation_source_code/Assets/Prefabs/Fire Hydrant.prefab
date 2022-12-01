@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1034186442441219534}
-  - component: {fileID: 1592148872224919848}
+  - component: {fileID: 5886167047796298329}
   m_Layer: 0
   m_Name: Fire Hydrant
   m_TagString: Untagged
@@ -34,7 +34,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1592148872224919848
+--- !u!114 &5886167047796298329
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -43,9 +43,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 6999672865123199544}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf53267c35071be46bdda94f5d7f5b71, type: 3}
+  m_Script: {fileID: 11500000, guid: 4edeac64f63ad4d48b16ec454bee3928, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MAX_OSCILLATIONS: 4
   LaserPrefab: {fileID: 1775997159335318685, guid: 58693990aa29cd448a093e1e33474219, type: 3}
 --- !u!1 &7374389928344181427
 GameObject:

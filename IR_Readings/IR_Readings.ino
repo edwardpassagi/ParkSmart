@@ -16,14 +16,14 @@
   If an IR reading is less than this threshold, we count this as
   a detected object.
 */
-const int SERVO_TURN_SPEED = 5;
-const int DETECTION_THRESHOLD = 60;
+const int SERVO_TURN_SPEED = 10;
+const int DETECTION_THRESHOLD = 120;
 const int MIDDLE_SERVO_ANGLE = 90;
 const int IR_ANGLE_OFFSET = 60;
 const int EVALUATOR_START_ANGLE = MIDDLE_SERVO_ANGLE - IR_ANGLE_OFFSET;
 const int EVALUATOR_END_ANGLE = MIDDLE_SERVO_ANGLE + IR_ANGLE_OFFSET;
 const int MAX_OSCILLATIONS = 4;
-const int PADDING = 25;
+const int PADDING = 15;
 
 const int DORMANT_STATE = 0;
 const int AWAKE_STATE = 1;
@@ -141,7 +141,7 @@ void loop() {
   evaluatorDistance = evaluatorNode.distance();
   
   // Print the measured distance to the serial monitor:
-  sprintf(buffer, "Mean distances: (%d,%d) o: %d s: %d, a: %d", leftDistance, evaluatorDistance, oscillations, system_state, servo_angle);
+  sprintf(buffer, "EVAL: %d\tLEFT: %d\to: %d\tangle: %d\tdir: %d", evaluatorDistance, leftDistance, oscillations, servo_angle, turn_direction);
   Serial.println(buffer);
 
   if (system_state == DORMANT_STATE){
@@ -160,19 +160,18 @@ void do_awake_state() {
   if (!is_evaluator_locked) {
     do_turn_servo();
   }
-  if (servo_angle <= EVALUATOR_START_ANGLE || servo_angle >= EVALUATOR_END_ANGLE) {
+
+  if ((servo_angle <= EVALUATOR_START_ANGLE && turn_direction == CW) || (servo_angle >= EVALUATOR_END_ANGLE && turn_direction == CCW)) {
     oscillations += 1;
     if (servo_angle <= EVALUATOR_START_ANGLE) {
       turn_direction = CCW;
-    } else {
+    } else if (servo_angle >= EVALUATOR_END_ANGLE){
       turn_direction = CW;
     }
-    do_turn_servo();
   }
-  if (get_evaluator_reading() > previous_reading - PADDING) {
+
+  if (get_evaluator_reading() > previous_reading + PADDING) {
     if (!is_evaluator_locked) {
-      switch_servo_turn_direction();
-      do_turn_servo();
       is_evaluator_locked = true;
     } else {
       is_evaluator_locked = false;
@@ -191,8 +190,4 @@ void do_awake_state() {
   if (oscillations == MAX_OSCILLATIONS) {
     enter_dormant_state();
   }
-}
-
-void minimizeDist() {
-  
 }
