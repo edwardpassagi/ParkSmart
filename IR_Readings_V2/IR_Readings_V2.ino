@@ -9,15 +9,16 @@
 #define IRPin_Evaluator A1
 #define SERVO_PIN 8
 #define LED_PIN 7
-#define model 100500
+#define model 100500 //do not change
 
-// variables to adjust
+// ------------------ VARIABLES TO ADJUST -----------------
 const int DETECTION_THRESHOLD = 80; //distance threshold in cm
-const int VEHICLE_LENGTH = 4;
-const int SERVO_TURN_SPEED = 2; 
+const int VEHICLE_LENGTH = 4; //how many datapoints 
+const int SERVO_TURN_SPEED = 2; //angle for each move 
 
-//fixed variables
-int arr[(120/SERVO_TURN_SPEED)+1];
+//FIXED variables
+const int num_datapoint = (120/SERVO_TURN_SPEED)+1;
+int arr[num_datapoint];
 const int EVALUATOR_START_ANGLE = 30;
 const int EVALUATOR_END_ANGLE = 150;
 const int DORMANT_STATE = 0;
@@ -82,9 +83,9 @@ void turn_LED_off() {
 }
 
 void turn_LED_blink() {
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 15; i++) {
     digitalWrite(LED_PIN, HIGH);  
-    delay(300); // 1 sec             
+    delay(300);                 
     digitalWrite(LED_PIN, LOW);   
     delay(300);
   }
@@ -156,7 +157,7 @@ void do_detection() {
     index += 1;   
     delay(5); 
   } 
-  index = 0;
+  index = 0;  
   analyze();
 
   for(angle = EVALUATOR_END_ANGLE; angle >= EVALUATOR_START_ANGLE; angle= angle - SERVO_TURN_SPEED)    
@@ -175,7 +176,7 @@ void analyze(){
   int max = 0;
   int counter = 0;
   //loop array to find the max segment of continuous value that is below threshold
-  for (int i = 0; i < 60; i++ ){
+  for (int i = 0; i < num_datapoint; i++ ){
     if (arr[i] <= DETECTION_THRESHOLD && arr[i] >= 1){ 
       counter += 1 ;
     } 
@@ -195,4 +196,3 @@ void analyze(){
     NUM_DETECTION = 0;
   }
 }
-
