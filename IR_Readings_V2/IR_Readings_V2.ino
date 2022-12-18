@@ -85,7 +85,7 @@ void turn_LED_off() {
 void turn_LED_blink() {
   for (int i = 0; i < 15; i++) {
     digitalWrite(LED_PIN, HIGH);  
-    delay(300);           
+    delay(300);                 
     digitalWrite(LED_PIN, LOW);   
     delay(300);
   }
